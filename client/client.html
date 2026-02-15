@@ -14,36 +14,93 @@
 
       //Based on the status of the response, write something.
       switch (response.status) {
+        //HEAD and GET Success
         case 200:
           content.innerHTML = `<b>Success</b>`;
           break;
+        //POST on Success
         case 201:
           content.innerHTML = `<b>Created</b>`;
           break;
+        case 204:
+          content.innerHTML = `<b>Updated(No Content)</b>`;
+          break;
         case 400:
-          content.innerHTML = `<b>Bad Request</b>`;
+          content.innerHTML = `<b>Bad Request</b>`
           break;
         case 404:
-          content.innerHTML = `<b>Resource Not Found</b>`;
+          content.innerHTML = `<b>Not Found</b>`;
           break;
         default:
           content.innerHTML = `Error code not implemented by client.`;
           break;
       }
 
-      //If we should parse a response (meaning we made a get request)
       if (parseResponse) {
-        //Parse the response to json. This is an async function, so we will await it.
-        let obj = await response.json();
-
-        //To display the data easily, we will just stringify it again and display it.
+        const obj = await response.json();
         let jsonString = JSON.stringify(obj);
         content.innerHTML += `<p>${jsonString}</p>`;
-      } else {
-        //If we don't have a response to parse, just say we recieved metadata
-        content.innerHTML += '<p>Meta Data Received</p>';
       }
     };
+
+    const handlePostResponse = async (response) => {
+
+      //Grab the content section so that we can write to it
+      const content = document.querySelector('#content');
+
+      //Based on the status of the response, write something.
+      switch (response.status) {
+        //POST on Success
+        case 201:
+          content.innerHTML = `<b>Created</b>`;
+          break;
+        case 204:
+          content.innerHTML = `<b>Updated(No Content)</b>`;
+          break;
+        case 400:
+          content.innerHTML = `<b>Bad Request</b>`
+          break;
+        case 404:
+          content.innerHTML = `<b>Not Found</b>`;
+          break;
+        default:
+          content.innerHTML = `Error code not implemented by client.`;
+          break;
+      }
+
+      const obj = await response.json();
+
+      if (obj.message) {
+        content.innerHTML += `<p>${obj.message}</p>`;
+      }
+
+    };
+
+    const sendPost = async (nameForm) => {
+      //Grab Info from form
+      const url = nameForm.getAttribute('action');
+      const method = nameForm.getAttribute('method');
+
+      //Those sub parts of nameForm
+      const name = nameForm.querySelector('#nameField').value;
+      const age = nameForm.querySelector('#ageField').value;
+      const dataType = 'application/json';
+
+      let formData = `name=${name}&age=${age}`;
+      formData = JSON.stringify({ name, age });
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': dataType,
+          'Content-Length': formData.length,
+          'Accept': 'application/json'
+        },
+        body: formData,
+      });
+
+      handlePostResponse(response);
+    }
 
     //function to send request. This is marked as async since we will use await.
     const requestUpdate = async (userForm) => {
@@ -67,7 +124,8 @@
     };
 
     const init = () => {
-      //grab form
+      //Grab forms 
+      const nameForm = document.querySelector('#nameForm');
       const userForm = document.querySelector('#userForm');
 
       //function to handle our request. In this case, it also cancels the built in html form action
@@ -77,8 +135,15 @@
         return false;
       }
 
+      const addUser = (e) => {
+        e.preventDefault();
+        sendPost(nameForm);
+        return false;
+      }
+
       //add event listener
       userForm.addEventListener('submit', getUsers);
+      nameForm.addEventListener('submit', addUser);
     };
 
     window.onload = init;
